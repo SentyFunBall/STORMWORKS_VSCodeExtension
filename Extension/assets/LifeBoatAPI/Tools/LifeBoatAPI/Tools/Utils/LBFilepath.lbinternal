@@ -53,7 +53,7 @@ LBFilepath = {
     end;
 
     filename = function(this)
-        _,filename = LBFilepath:new(this:win():match("(.+\\)(.+)"), this.caseSensitive)
+        _, filename = LBFilepath:new(this:win():match("(.+\\)(.+)"), this.caseSensitive)
         return filename
     end;
 
