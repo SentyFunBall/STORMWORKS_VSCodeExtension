@@ -5,15 +5,16 @@ import { TextEncoder } from 'util';
 import { settings } from 'cluster';
 import * as utils from "./utils";
 import * as projectCreation from "./projectCreation";
+import * as settingsManagement from "./settingsManagement"
 
 function generateSimulatorLua(workspaceFolder:vscode.Uri, fileToSimulate : vscode.Uri)
 {
     // turn the relative path into a lua require
-    var relativePath = fileToSimulate.fsPath.replace(workspaceFolder.fsPath, "");
-    relativePath = relativePath.replace(path.extname(relativePath), "");
-    relativePath = relativePath.replace("\\\\", "\\");
-    relativePath = relativePath.replace("\\", "."); 
-    relativePath = relativePath.replace("/", ".");
+    let relativePath = fileToSimulate.fsPath.replaceAll(workspaceFolder.fsPath, "");
+    relativePath = relativePath.replaceAll(path.extname(relativePath), "");
+    relativePath = relativePath.replaceAll("\\", "/");
+    relativePath = relativePath.replaceAll("//", "/");
+    relativePath = relativePath.replaceAll("/", ".");
 
     if(relativePath.substr(0,1) === ".") // remove initial "." that might be left
     {
@@ -22,43 +23,62 @@ function generateSimulatorLua(workspaceFolder:vscode.Uri, fileToSimulate : vscod
 
     // is that correct?
     // or do we need to do something else?
-    var contents = `
+    let contents = `
+--- @diagnostic disable: undefined-global
+
 require("LifeBoatAPI.Tools.Simulator.LBSimulator");
-local __simulator = LBSimulator:new() 
+__simulator = LBSimulator:new() 
+__simulator:beginSimulation(false, arg[1], arg[2])
 
 require("${relativePath}");
 
-__simulator:beginSimulation(false, arg[1])
+-- compatibility with 0.0.4 projects
+if onLBSimulatorInit then
+    onLBSimulatorInit(__simulator, __simulator.config, LBSimulatorInputHelpers)
+end
+
 __simulator:giveControlToMainLoop()
+
+--- @diagnostic enable: undefined-global
 `;
     return projectCreation.addBoilerplate(contents);
 }
 
 export function beginSimulator(context:vscode.ExtensionContext)
 {
-    var workspace = utils.getCurrentWorkspaceFolder();
-    var file = utils.getCurrentWorkspaceFile();
+    let workspace = utils.getCurrentWorkspaceFolder();
+    let file = utils.getCurrentWorkspaceFile();
 
     if (workspace
         && file
         && utils.isMicrocontrollerProject()
         && !vscode.debug.activeDebugSession) // avoid running two debug sessions at once, easy to do as it's F6 to start
     {
-        var simulatorLua = generateSimulatorLua(workspace.uri, file);
-        var simulatedLuaFile = vscode.Uri.file(workspace.uri.fsPath + "/_build/_simulator.lua");
+        let simulatorLua = generateSimulatorLua(workspace.uri, file);
+        let simulatedLuaFile = vscode.Uri.file(workspace.uri.fsPath + "/_build/_simulator.lua");
+
+        let ws : vscode.WorkspaceFolder = workspace;
+
+        // load the path and cpath, this means if the settings file is wrong - at least the simulator works
+        // although the lua-debug probably won't. It shouldn't be needed, but it will make life a bit more stable.
+        let path = settingsManagement.getDebugPaths(context);
+        path.push(utils.sanitisePath(workspace.uri.fsPath) + "?.lua");
 
         return vscode.workspace.fs.writeFile(simulatedLuaFile, new TextEncoder().encode(simulatorLua))
         .then(
             () => {
-                var config = {
+                let config = {
                     name: "Run Simulator",
                     type: "lua",
                     request: "launch",
                     program: `${simulatedLuaFile?.fsPath}`,
                     stopOnEntry: false,
                     stopOnThreadEntry: false,
+                    cpath: settingsManagement.getDebugCPaths(context).join(";"),
+                    path: path.join(";"),
                     arg: [
-                        context.extensionPath + "/assets/simulator/STORMWORKS_Simulator.exe"
+                        utils.sanitisePath(context.extensionPath) + "/assets/simulator/STORMWORKS_Simulator.exe",
+                        utils.sanitisePath(ws.uri.fsPath) + "/_build/_debug_simulator_log.txt"
                     ]
                 };
                 

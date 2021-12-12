@@ -13,6 +13,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace STORMWORKS_Simulator
 {
@@ -35,7 +36,7 @@ namespace STORMWORKS_Simulator
 
         public string ReadNextMessage(NetworkStream stream)
         {
-            var length = int.Parse(ReadString(stream, 4));
+            var length = int.Parse(ReadString(stream, 4), CultureInfo.InvariantCulture);
             return ReadString(stream, length);
         }
 
@@ -71,19 +72,19 @@ namespace STORMWORKS_Simulator
             {
                 try
                 {
+                    Logger.Log("Opening connection on port 14238");
                     var listener = new TcpListener(IPAddress.Parse("127.0.0.1"), 14238);
                     listener.Start();
 
+                    Logger.Log("Now Accepting TCP clients");
                     _Client = listener.AcceptTcpClient();
                     var stream = _Client.GetStream();
                     var reader = new SocketReadBuffer(2048);
 
-                    Logger.Log("Beginning Message Loop");
+                    Logger.Log($"Client accepted - Client Connected: {_Client.Connected}, beginning Message Loop");
                     while (IsActive)
                     {
                         var message = reader.ReadNextMessage(stream);
-                        Logger.Log($"Message: {message}");
-
                         OnLineRead?.Invoke(this, message);
                     }
                     _Client.Close();
@@ -92,8 +93,11 @@ namespace STORMWORKS_Simulator
                 }
                 catch (Exception e)
                 {
-                    Logger.Error($"[Read] Caught Exception: {e}");
+                    Logger.Error($"SocketReadTask - Exception - Closing Pipe - Client Connected: {_Client.Connected} - {e}");
                     OnPipeClosed?.Invoke(this, new EventArgs());
+#if DEBUG
+                    throw e;
+#endif
                 }
             });
         }
@@ -115,8 +119,12 @@ namespace STORMWORKS_Simulator
             }
             catch (Exception e)
             {
-                Logger.Error($"[Write] Caught Exception: {e}");
+                Logger.Error($"SocketConnection - SendMessage ({commandName}) - Exception - Closing Pipe - {e}");
                 OnPipeClosed?.Invoke(this, new EventArgs());
+
+#if DEBUG
+                throw e;
+#endif
             }
         }
     }

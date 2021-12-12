@@ -1,5 +1,6 @@
 # Stormworks Lua with LifeBoatAPI
 
+
 An extension to provide proper build processes to the Stormworks community.
 
 Key Features:
@@ -16,15 +17,17 @@ LifeBoatAPI solves these by providing:
 - Full type hinting and error checking to avoid typos
 - A solid library of code, the LifeBoatAPI, to simplify writing Stormworks code.
 
-Developed by Nameous Changey: https://github.com/nameouschangey 
+**Developed by Nameous Changey:** https://github.com/nameouschangey 
+
+**Please report any issues here:** https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues
 
 Using:
-- integrated lua-docs from 'Nelo: https://github.com/Rene-Sackers/StormworksLuaDocsGen
+- integrated lua-docs from René Sackers: https://github.com/Rene-Sackers/StormworksLuaDocsGen
 - lua-debug extension from: actboy169
 - lua language server extension from: sumneko
 
-# Features
-## Automatic Boilerplate Generation
+# Quick Start Guide
+## (0. Set your name so you can be credited!)
 Boilerplate is generated with your details at the top of all files you create and build.
 
 Goto Settings, and set your AuthorName, GithubLink and WorkshopLink:
@@ -34,14 +37,14 @@ Goto Settings, and set your AuthorName, GithubLink and WorkshopLink:
 - Fill in those fields and a creditation notice will be automatically generated on files you create
 - The optional "extended boilerplate" allows you to write a custom line, if you also wish
 
-## Create a New Stormworks Code Project
+## 1. Create a New Stormworks Code Project
 To create a New Project:
 
 - From the "Get Started" screen click "New File", then select **`Stormworks: New Microcontroller Project`**
-- From the "File" menu, select "New File..." (not "New File")
-- Open the command-palette (CTRL+P) and search for "Stormworks: New Microcontroller Project"
+- Or, From the "File" menu, select "New File..." (not "New File")
+- Or, Open the command-palette (`CTRL+SHIFT+P`) and type in "`Stormworks: New Microcontroller Project`"
 
-## Run, Simulate, Build
+## 2. Run, Simulate, Build
 Once the project is open, you can:
 
 ### `F5` Run
@@ -62,10 +65,14 @@ To compile your project into the smallest, 4K character, form needed by the game
 This combines all your require(...) directives correctly, and then minimizes the output into the **`/out/release/`** folder.
 
 >The basic use of the minimizer is more powerful than both lua-min and FlaffyPonyIDE's minimizers. However, it also adds redundancy removal functionality; which opens a new world of options. See below.
- 
- 
 
-### Reminder: Let the Minimizer do it for you!
+## 3. Got stuck? Ask for help!
+This extension is in active development; I'm happy to try and help you get setup - and of course, when there are bugs, I'd always appreciate them being noted.
+
+Please report any bugs you find here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues
+And if you want some help, you can find me on the Stormworks discord as "Nameous" and ask there: https://discord.com/invite/stormworks
+
+## (Reminder: Let the Minimizer do it for you!)
 
 When writing code, it's tempting to try and shorten everything; or do clever tricks to "get the size down".
 
@@ -86,6 +93,7 @@ m = math
 a = m.min(1,0)
 ```
 
+# Features
 
 ## Use the Lua "require(...)" Function
 LifeBoatAPI also adds the "require(...)" lua function.
@@ -199,7 +207,37 @@ myClass = {
 ---@endsection _MYCLASS_
 ```
 
+## Pre and Post Build Steps
+To allow for more complex build chains, two additional lua files are generated with your project:
+`/_build/_pre_buildactions.lua`
+`/_build/_post_buildactions.lua`
+
+These are entirely optional, but if they exist - they are run just before ("_pre_") and just after ("_post_") the build (`F7`) is run.
+This allows you to integrate the build chain with other tools or processes more easily.
+
+For example, if you are using Réne Sackers Lua-Extract tool; https://github.com/Rene-Sackers/StormworksLuaExtract
+A potential build chain might be:
+- In `_post_buildactions.lua`
+- Copy the output from /out/release/ to the Lua-Extract /workspace/ directory (overwriting the relevant MC file)
+- Lua-Extract will then take this data, and copy it into the game for you
+
+This would allow you to update the files in-game, simply by pressing `F7`
+
+
+Similarly, in `_pre_buildactions.lua`, if you have code generation you wish to run you can do so - for example:
+- a find-and-replace Macro that lets you write code that acts like a function, without the function overhead
+- running an external image to lua tool, so you can just stick the images in your `Project` folder, and automatically include them into your lua script every time you hit `F7`
+
+
 \!\[feature X\]\(images/feature-x.png\)
+
+## What is the "LifeBoatAPI"
+
+The lifeboat API, is name such as the functionality being provided is more than just a few library functions - but a framework to simplify writing Stormworks mods, and Stormworks is a rescue game (a.k.a/ "Nameous is not very good at naming things")
+
+It's currently in development and so much of it is hidden from the current version of the extension.
+
+In future versions, you will be able to use LifeBoatAPI features via the `require(...)` command.
 
 ## Requirements
 
@@ -208,12 +246,3 @@ The LifeBoatAPI simulator was written for Windows, unfortunately as Nameous Chan
 All other requirements are installed automatically with this extension:
 Lua by sumneko
 Lua-Debug by actboy168
-
-## Version History
-### 1.0.0
-Initial testing release
-- LifeBoatAPI for Microcontrollers has some useful utilities
-- LifeBoatAPI for Addons needs re-written from scratch, (not - included)
-- Simulator written and working
-- Debugging configurations setup and working
-- Project creation written and working

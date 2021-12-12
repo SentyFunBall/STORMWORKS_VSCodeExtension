@@ -4,6 +4,37 @@ import { Func } from 'mocha';
 import { TextEncoder } from 'util';
 import { settings } from 'cluster';
 
+declare global
+{
+	interface String {
+		replaceAll(searchValue: string | RegExp, replacement: string): string;
+	}
+}
+
+String.prototype.replaceAll = function (searchValue: string | RegExp, replacement: string)
+{
+	let current = String(this);
+	let changed = String(this);
+	do 
+	{
+		current = changed;
+		changed = current.replace(searchValue, replacement);
+	}
+	while(current !== changed);
+
+	return current;
+};
+
+export function sanitisePath(path : string)
+{
+	path = path.replaceAll("\\", "/");
+	if(path.charAt(path. length-1) !== "/")
+	{
+		return path + "/";
+	}
+	return path;
+}
+
 export function getCurrentWorkspaceFile() {
 	return vscode.window.activeTextEditor?.document.uri;
 }
@@ -22,7 +53,7 @@ export function isMicrocontrollerProject() : boolean
 {
 	if(getCurrentWorkspaceFile())
 	{
-		var lifeboatConfig = vscode.workspace.getConfiguration("lifeboatapi.stormworks", getCurrentWorkspaceFile());
+		let lifeboatConfig = vscode.workspace.getConfiguration("lifeboatapi.stormworks", getCurrentWorkspaceFile());
 		return lifeboatConfig.get("isMicrocontrollerProject") ?? false;
 	}
 	else
@@ -34,7 +65,7 @@ export function isMicrocontrollerProject() : boolean
 export function isStormworksProject() {
 	if(getCurrentWorkspaceFile())
 	{
-		var lifeboatConfig = vscode.workspace.getConfiguration("lifeboatapi.stormworks", getCurrentWorkspaceFile());
+		let lifeboatConfig = vscode.workspace.getConfiguration("lifeboatapi.stormworks", getCurrentWorkspaceFile());
 		return lifeboatConfig.get("isAddonProject") || lifeboatConfig.get("isMicrocontrollerProject");
 	}
 	else

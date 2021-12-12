@@ -9,8 +9,6 @@ require("LifeBoatAPI.Tools.Simulator.LBSimulatorScreen")
 require("LifeBoatAPI.Tools.Simulator.LBSimulatorConfig")
 require("LifeBoatAPI.Tools.Simulator.LBSimulatorInputHelpers")
 
-function Empty() end;
-
 ---@class LBSimulator : LBBaseClass
 ---@field config LBSimulatorConfig reference to the Simulator input/output config
 ---@field timePerFrame number in seconds
@@ -93,10 +91,12 @@ LBSimulator = {
 
     ---@param this LBSimulator
     ---@param attachToExistingProcess boolean attach to an existing running Simulator, instead of kicking off a new instance
-    beginSimulation = function(this, attachToExistingProcess, simulatorFile)
+    beginSimulation = function(this, attachToExistingProcess, simulatorFile, simulatorLogFile)
+        simulatorLogFile = simulatorLogFile or ""
+
         if not attachToExistingProcess then
             local simulatorExePath = LBFilepath:new(simulatorFile)
-            this._simulatorProcess = io.popen(simulatorExePath:win(), "w")
+            this._simulatorProcess = io.popen(simulatorExePath:win() .. " -logfile \"" .. simulatorLogFile .. "\"", "w")
         end
 
         this._connection = LBSimulatorConnection:new()
@@ -118,9 +118,6 @@ LBSimulator = {
         this.config:addNumberHandler(2, helpers.touchScreenHeight(this,1))
         this.config:addNumberHandler(3, helpers.touchScreenXPosition(this,1))
         this.config:addNumberHandler(4, helpers.touchScreenYPosition(this,1))
-
-        onSimulatorInit = onLBSimulatorInit or Empty
-        onSimulatorInit(this, this.config, LBSimulatorInputHelpers)
     end;
 
 
@@ -174,18 +171,17 @@ LBSimulator = {
 
                     for screenNumber, screenData in pairs(this._screens) do 
                         if screenData.poweredOn then
-                            this.currentScreen = screenData
+                            this._currentScreen = screenData
                             this.isRendering = true
-                            if this._connection.isAlive then screen.drawClear() end
                             if this._connection.isAlive then onDraw() end
-                            if this._connection.isAlive then this._connection:sendCommand("FRAMESWAP", screenNumber) end
                         end
                     end
+
+                    if this._connection.isAlive then this._connection:sendCommand("TICKEND", 1) end
                 else
                     framesSinceRender = framesSinceRender + 1
+                    if this._connection.isAlive then this._connection:sendCommand("TICKEND", 0) end
                 end
-
-                if this._connection.isAlive then this._connection:sendCommand("TICKEND") end
             end
         end
 

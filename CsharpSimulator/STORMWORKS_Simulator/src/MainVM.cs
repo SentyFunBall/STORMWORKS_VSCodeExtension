@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using SkiaSharp;
+using System.Globalization;
 
 namespace STORMWORKS_Simulator
 {
@@ -26,7 +28,7 @@ namespace STORMWORKS_Simulator
             set { _BoolValue = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null)); }
         }
 
-        public double NumberValue
+        public float NumberValue
         {
             get => _NumberValue;
             set { _NumberValue = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null)); }
@@ -34,7 +36,7 @@ namespace STORMWORKS_Simulator
 
         private string _Name;
         private bool _BoolValue;
-        private double _NumberValue;
+        private float _NumberValue;
 
         public StormworksInputOutput(string name)
         {
@@ -62,7 +64,7 @@ namespace STORMWORKS_Simulator
             set
             {
                 FrameSkipIndex = FrameSkipOptions.IndexOf(value);
-                FrameSkip = int.Parse(value);
+                FrameSkip = int.Parse(value, CultureInfo.InvariantCulture);
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
                 OnTickrateChanged?.Invoke(this, this);
             }
@@ -71,26 +73,14 @@ namespace STORMWORKS_Simulator
         public int FrameSkip { get; private set; } = 0;
 
         // draw colour is shared between all screens
-        public SolidColorBrush FontBrush { get; private set; }
-        public Color Color
-        {
-            get => _Color;
-            set
-            {
-                _Color = value;
-                ColorInt = WriteableBitmapExtensions.ConvertColor(value);
-                FontBrush = new SolidColorBrush(_Color);
-            }
-        }
-        public int ColorInt { get; private set; }
-        private Color _Color;
+        public SKColor Color { get; set; }
 
-        public int MapOceanColour       { get; set; }
-        public int MapShallowsColour    { get; set; }
-        public int MapLandColour        { get; set; }
-        public int MapSandColour        { get; set; }
-        public int MapGrassColour       { get; set; }
-        public int MapSnowColour        { get; set; }
+        public SKColor MapOceanColour       { get; set; }
+        public SKColor MapShallowsColour    { get; set; }
+        public SKColor MapLandColour        { get; set; }
+        public SKColor MapSandColour        { get; set; }
+        public SKColor MapGrassColour       { get; set; }
+        public SKColor MapSnowColour        { get; set; }
 
         public static List<string> TickRateOptions { get; private set; } = new List<string>() { "60", "1", "10", "30", "Unlimited"};
         public string TickRateOption
@@ -106,7 +96,7 @@ namespace STORMWORKS_Simulator
                 else
                 {
                     TickRateIndex = TickRateOptions.IndexOf(value);
-                    TickRate = int.Parse(value);
+                    TickRate = int.Parse(value, CultureInfo.InvariantCulture);
                 }
                 
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
@@ -131,7 +121,7 @@ namespace STORMWORKS_Simulator
 
         public MainVM()
         {
-            Color = Color.FromArgb(255,255,255,255);
+            Color = new SKColor(255,255,255,255);
             SetupMapColours();
 
             Inputs = new ObservableCollection<StormworksInputOutput>();
@@ -179,12 +169,12 @@ namespace STORMWORKS_Simulator
 
         private void SetupMapColours()
         {
-            MapOceanColour    = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 50, 150, 150));
-            MapShallowsColour = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 75, 170, 170));
-            MapLandColour     = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 220, 220, 220));
-            MapSandColour     = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 230, 230, 140));
-            MapGrassColour    = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 190, 215, 150));
-            MapSnowColour     = WriteableBitmapExtensions.ConvertColor(Color.FromArgb(255, 255, 255, 255));
+            MapOceanColour    = new SKColor(50,  150, 150, 255);
+            MapShallowsColour = new SKColor(75,  170, 170, 255);
+            MapLandColour     = new SKColor(220, 220, 220, 255);
+            MapSandColour     = new SKColor(230, 230, 140, 255);
+            MapGrassColour    = new SKColor(190, 215, 150, 255);
+            MapSnowColour     = new SKColor(255, 255, 255, 255);
         }
     }
 }

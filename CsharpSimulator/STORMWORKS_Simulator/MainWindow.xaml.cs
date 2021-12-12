@@ -32,10 +32,13 @@ namespace STORMWORKS_Simulator
         public Timer KeepAliveTimer;
         public TickHandler TickHandler;
 
-        public MainWindow()
+        public MainWindow(CommandLineArgs args)
         {
-            Logger.SetLog(@"C:\personal\STORMWORKS_VSCodeExtension\debug.txt");
-            Logger.Enabled = false;
+            Logger.SetLog(args.LogFilepath);
+            Logger.ErrorEnabled = args.EnableLogging;
+            Logger.InfoEnabled = args.EnableLogging;
+
+            Logger.Log("Launching, time stamp.");
 
             InitializeComponent();
 
@@ -57,6 +60,10 @@ namespace STORMWORKS_Simulator
             KeepAliveTimer = new Timer(OnKeepAliveTimer, null, 100, 100);
             
             var screen = ViewModel.GetOrAddScreen(1);
+            //screen.ScreenResolutionDescription = "3x3";
+            //TickHandler.OnLineRead(this, "CIRCLE|1|1|16|16|16");
+
+            Logger.Log("MainWindow Initialized and running");
         }
 
         private void OnKeepAliveTimer(object state)
@@ -68,6 +75,7 @@ namespace STORMWORKS_Simulator
             }
             catch (Exception e)
             {   // squash the error or it will confuse users in VSCode wondering why there's a bright red error
+                Logger.Error($"OnKeepAliveTimer - Exception - Closing Application - {e}");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Application.Current.Shutdown();
@@ -77,6 +85,8 @@ namespace STORMWORKS_Simulator
 
         private void Pipe_OnPipeClosed(object sender, EventArgs e)
         {
+            Logger.Error($"Pipe_OnPipeClosed - Closing Application");
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 Application.Current.Shutdown();
@@ -91,7 +101,10 @@ namespace STORMWORKS_Simulator
         private void SendTouchDataIfChanged(object sender, ScreenVM vm)
         {
             // only send the update if things actually changed
-            var newCommand = $"{vm.ScreenNumber + 1}|{(vm.IsLDown ? '1' : '0') }|{ (vm.IsRDown ? '1' : '0') }|{vm.TouchPosition.X}|{vm.TouchPosition.Y}";
+            var xTouchPos = Math.Min(Math.Max(vm.TouchPosition.X, 0), vm.Monitor.Size.X-1);
+            var yTouchPos = Math.Min(Math.Max(vm.TouchPosition.Y, 0), vm.Monitor.Size.Y-1);
+
+            var newCommand = $"{vm.ScreenNumber + 1}|{(vm.IsLDown ? '1' : '0') }|{ (vm.IsRDown ? '1' : '0') }|{xTouchPos}|{yTouchPos}";
             if (newCommand != vm.LastTouchCommand)
             {
                 vm.LastTouchCommand = newCommand;
@@ -119,12 +132,5 @@ namespace STORMWORKS_Simulator
         private void Canvas_MouseEnter(object sender, MouseEventArgs e) { ((sender as Canvas).DataContext as ScreenVM).OnMouseEnter(sender as Canvas, e); }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e) { ((sender as Canvas).DataContext as ScreenVM).OnMouseMove(sender as Canvas, e); }
-
-        private void Canvas_Initialized(object sender, EventArgs e)
-        { // irritating hack, but needed for drawing text without a bunch of other bodges.
-            Canvas canvas = sender as Canvas;
-            ScreenVM vm = canvas.DataContext as ScreenVM;
-            vm._Canvas = canvas;
-        }
     }
 }

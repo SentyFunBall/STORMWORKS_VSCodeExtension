@@ -9,42 +9,42 @@ namespace STORMWORKS_Simulator
     public static class Logger
     {
         private static string Logfile;
-        public static bool Enabled;
+        public static bool InfoEnabled;
         public static bool ErrorEnabled = true;
+        public static object LogLock = new object();
 
         public static void SetLog(string path, bool enabled = true, bool errorEnabled = true)
         {
-            Enabled = enabled;
+            InfoEnabled = enabled;
             ErrorEnabled = errorEnabled;
             Logfile = path;
-#if DEBUG
-            System.IO.File.WriteAllText(Logfile, "");
-#endif
+
+            if (enabled && Logfile != null)
+            {
+                System.IO.File.WriteAllText(Logfile, "");
+            }
         }
 
         public static void Log(string message)
         {
-#if DEBUG
-            if (Enabled)
+            if (InfoEnabled && Logfile != null)
             {
-
-                System.IO.File.AppendAllText(Logfile, message + "\n");
-
+                lock (LogLock)
+                {
+                    System.IO.File.AppendAllText(Logfile, DateTime.UtcNow.ToString() + " " + message + "\n");
+                }
             }
-#endif
-
         }
 
         public static void Error(string message)
         {
-#if DEBUG
-            if (ErrorEnabled)
+            if (ErrorEnabled && Logfile != null)
             {
-
-                System.IO.File.AppendAllText(Logfile, "ERROR: " + message + "\n");
-
+                lock (LogLock)
+                {
+                    System.IO.File.AppendAllText(Logfile, "\n" + DateTime.UtcNow.ToString() + " " + message + "\n\n");
+                }
             }
-#endif
         }
     }
 }
