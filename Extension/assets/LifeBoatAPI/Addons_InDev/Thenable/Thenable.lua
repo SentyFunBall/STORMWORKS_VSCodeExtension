@@ -5,67 +5,140 @@
 
 LifeBoatAPI = LifeBoatAPI or {}
 LifeBoatAPI.Async = LifeBoatAPI.Async or {}
-LifeBoatAPI.Async = LBNamespace(
 
----@class LifeBoat.Async
----@field Awaitble LifeBoat.Async.Awaitable
----@field AwaitAll LifeBoat.Async.AwaitAll
-{
+missionManager:createNewMission()
+            :andThen(function(mission)
+                playerTracker:awaitPlayerRespawn()
+            end)
+            :andThen(function(player)
+                local marker = player.setMarker("Get to the island")
+                return timers:awaitFor(10)
+                                :andThen(marker:remove())
+                                , player
+            end)
+            :andThen(function(player)
+                return playerTracker:awaitPlayerAtLocation(myIslandLocation), player
+            end)
+            :andThen(function(island, player, player)
+                local popup = player:setPopup("Congratulations kiddo, you've beaten this mission")
+                progressTracker:setComplete("ABC")
+            end)
 
-    ---@class LifeBoat.Async.Awaitable : LBBaseClass
-    Awaitable = {
-        new = function (this, parent)
-            this = LBBaseClass.new(this)
-            this.parent = parent
-            return this
-        end;
-        
-        trigger = function (this, ...)
-            if(this.onComplete) then
-                this.onComplete(...)
-            end
-        end;
 
-        andThen = function (this, callback)
-            local awaitable = LifeBoatAPI.Async.Awaitable:new(this)
 
-            this.onComplete = function(...)
-                local result = callback(...)
-                awaitable:trigger(result)
-            end
+---@class LifeBoat.Async.Awaitable : LBBaseClass
+LifeBoatAPI.Async.Awaitable = {
+    new = function (this, parent)
+        this = LifeBoatAPI.Base.BaseClass.new(this)
+        this.parent = parent
+        this.chainedCallbacks = {}
+        return this
+    end;
     
-            return awaitable
-        end;
-    };
+    trigger = function (this, ...)
+        for _, callback in ipairs(this.chainedCallbacks) do
+            callback(...)
+        end
+    end;
 
+    andThen = function (this, callback)
+        local awaitable = LifeBoatAPI.Async.Awaitable:new(this)
 
-    ---@class LifeBoat.Async.AwaitAll : LifeBoat.Async.Awaitable
-    AwaitAll = {
-        --- overwrites parent
-        trigger = function (this, ...)
-            if(this.onComplete) then
-                this.onComplete(...)
+        table.insert(
+            this.chainedCallbacks,
+            function(...)
+                local result = {callback(...)}
+                -- slightly harder because Lua allows multi-returns
+
+                if #result == 0 then
+                    result = {nil}    
+                end
+
+                local firstResult = result[0]
+
+                if LifeBoatAPI.Async.Awaitable:is(firstResult) then
+                    -- if the function returned an awaitable
+                    -- we're meant to wait for that to continue, then chain everything from it
+                    -- but I'm not sure how that works
+                    -- it's necessary for handling it like a diamond
+
+                    -- is this method of chaining the right way?
+                    -- possibly?
+                else
+                    
+                end
+
+                awaitable:trigger(table.unpack(result))
             end
-        end;
+        )
 
-        andThen = function (this, callback)
-            local awaitable = LifeBoatAPI.Async.Awaitable:new(this)
+        return awaitable
+    end;
+};
+LifeBoatAPI.Base.Class(LifeBoatAPI.Async.Awaitable)
 
-            this.onComplete = function(...)
-                local result = callback(...)
-                awaitable:trigger(result)
-            end
+
+
+---@class LifeBoat.Async.Awaitable2 : LBBaseClass
+LifeBoatAPI.Async.Awaitable2 = {
+    new = function (this, parent)
+        this = LifeBoatAPI.Base.BaseClass.new(this)
+        this.onComplete = nil
+        return this
+    end;
     
-            return awaitable
-        end;
-    };
+    trigger = function (this, ...)
+        if this.onComplete then
+            return this.onComplete(...)
+        end
+    end;
+
+    andThen = function (this, callback)
+        local awaitable = LifeBoatAPI.Async.Awaitable:new(this)
+
+        this.onComplete =function(...)
+            local result = callback(...)
+
+            awaitable:trigger(result)
+        end
+
+        return awaitable
+    end;
+};
+LifeBoatAPI.Base.Class(LifeBoatAPI.Async.Awaitable2)
+
+-- 1) get thenable working as designed
+-- THEN, 2) see if there's a stateful approach that'd work with g_savedata
+-- not sure there is unless every operation is entirely atomic?
+
+-- maybe thenable is a horrendous way to do this
 
 
-}, LifeBoatAPI.Async)
+---@class LifeBoat.Async.AwaitAll : LifeBoat.Async.Awaitable
+LifeBoatAPI.Async.AwaitAll = {
+    --- overwrites parent
+    trigger = function (this, ...)
+        if(this.onComplete) then
+            this.onComplete(...)
+        end
+    end;
 
-LBClass(LifeBoatAPI.Async.Awaitable)
-LBClass(LifeBoatAPI.Async.Awaitable, LifeBoatAPI.Async.AwaitAll)
+    andThen = function (this, callback)
+        local awaitable = LifeBoatAPI.Async.Awaitable:new(this)
 
+        this.onComplete = function(...)
+            local result = callback(...)
+            awaitable:trigger(result)
+        end
+
+        return awaitable
+    end;
+};
+LifeBoatAPI.Base.Class(LifeBoatAPI.Async.Awaitable, LifeBoatAPI.Async.AwaitAll)
+
+
+
+--[[
 
 ---@class LBAwaitable
 LBAwaitable = {
@@ -151,3 +224,5 @@ LBAwaitable = {
     end;
 }
 LBClass(LBAwaitable);
+
+]]

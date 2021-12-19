@@ -1,8 +1,6 @@
 -- developed by nameouschangey (Gordon Mckendrick) for use with LifeBoat Modding framework
 -- please see: https://github.com/nameouschangey/STORMWORKS for updates
 
----@diagnostic disable: undefined-doc-name
-
 ------------------------------------------------------------------------------------------------------------------
 --- Copies data from (from) to (to)
 --- underwrites values copied (leaves original if it exists)
@@ -84,3 +82,63 @@ function LBNamespace(new, current)
     end
     return new
 end
+
+
+---@class Awaitable : LBBaseClass
+Awaitable = {
+
+    ---@return Awaitable this
+    new = function (this)
+        this = LBBaseClass.new(this)
+        this.onComplete = nil -- benefits of this being an array? can queue multiple things to one trigger easily. but deregistering is hard
+        return this
+    end;
+    
+    trigger = function (this, ...)
+        if this.onComplete then
+            return this.onComplete(...)
+        end
+    end;
+
+    andThen = function (this, callback)
+        local awaitable = Awaitable:new()
+
+        this.onComplete =function(...)
+            local result = callback(...) -- for the standard, this should be stateful
+
+            if not result
+            or not Awaitable:is(result) then
+                -- plain value (including nil) result
+                awaitable:trigger(result)
+            else
+                -- result is an awaitable, so we chain onto that
+                result.onComplete = function(...)
+                    awaitable:trigger(...)
+                end
+            end
+        end
+
+        return awaitable
+    end;
+};
+LBClass(Awaitable)
+
+a = Awaitable:new()
+b = Awaitable:new()
+
+a:andThen(function(param)
+        print("called first " .. param)
+        return b:andThen(function(bbb)
+            print("inner: " .. tostring(bbb))
+            return bbb .. "dot"
+        end)
+    end)
+    :andThen(function(param)
+        print("called 2nd " .. param)
+    end)
+
+a:trigger("banana")
+
+print("waiting after a")
+
+b:trigger("pajama")

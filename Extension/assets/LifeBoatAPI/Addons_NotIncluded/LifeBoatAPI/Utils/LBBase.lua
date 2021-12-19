@@ -35,11 +35,16 @@ LBBaseClass = {
 
     --- Checks whether this instance, is of the given class type at runtime
     --- @generic ParentType
-    --- @param this LBBaseClass
-    --- @param class ParentType class to see if this is an instance of, or inherits from
+    --- @param this ParentType
+    --- @param object any class to see if this is an instance of, or inherits from
     --- @return boolean true if the current instance, is a type that inherits from the given class
-    is = function(this, class)
-        return (this == class) or (this ~= nil and class ~= nil and type(this) == type(class)) or this.is(this.__c, class)
+    is = function(this, object)
+        if this == nil or object == nil then
+            return false
+        end
+
+        return (this == object)
+            or (type(object) == "table" and this:is(object.__c))
     end;
 
     --- shallow clone of this instance
