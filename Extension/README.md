@@ -26,6 +26,10 @@ Using:
 - lua-debug extension from: actboy169
 - lua language server extension from: sumneko
 
+# Latest Change
+Try using the LifeBoatAPI library via `require("LifeBoatAPI")` for a full vector library, maths utilities and more.
+
+
 # Quick Start Guide
 ## (0. Set your name so you can be credited!)
 Boilerplate is generated with your details at the top of all files you create and build.
@@ -230,6 +234,13 @@ Similarly, in `_pre_buildactions.lua`, if you have code generation you wish to r
 
 
 \!\[feature X\]\(images/feature-x.png\)
+
+
+## Multi-MC Simulation
+
+Please see the /_build/_multi/ folder for this feature
+It is an experimental feature, for advanced lua users; to support chaining multiple MCs together to multiple (potentially different) monitors.
+
 
 ## What is the "LifeBoatAPI"
 

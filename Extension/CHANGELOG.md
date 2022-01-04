@@ -1,4 +1,38 @@
 # Change Log
+Issue tracker: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues 
+
+### [0.0.8] - 2nd January 2022
+**major**
+- **Add require("LifeBoatAPI") library for Microcontrollers:**
+   - LBVec - vector maths library
+   - LBTouchScreen - touch handling and basic button logic
+   - LBAnimation - tick-based animation handling
+   - LBStateMachine - simple state machine handling
+   - LBTableUtils - table manipulation, including linq-like functions 
+   - LBRollingAverage - simple way to handle rolling averages
+   - LBMaths - simple maths conversions library, including compass conversion
+
+- Minimizer settings now available, can turn off all minification if desired
+
+**minor**
+- Add optional pan/zoom position saving to the Simulator between sessions
+- Fixed, simulator handling nil values differently to the game
+- Fixed, goto keyword being minimized
+- Wrapped up LifeBoatAPI into a single global, to reduce the debug spam
+- Redirected stderr away from the output during build, to reduce log spam
+
+
+### [0.0.7] - 19th December 2021
+**major**
+- Fixed screen.drawTextBox exception on certain strings (causing nothing to display)
+- **Added Multi-MC simulation support; in the _build/_multi folder for advanced users**
+- Fixed "using input and output in onDraw should be an error"
+- Fixed "input.getBool(1) is E OR Q pressed, not just Q"
+
+**minor**
+- Minor cleanup of input, output and screen tables containing non-SW functions not starting with an underscore
+
+
 ### [0.0.6] - 12th December 2021
 **major**
 - Fixed number parsing issue affecting everybody outside of English-language countries! (sorry!)
