@@ -62,10 +62,10 @@ LifeBoatAPI.Tools.Minimizer = {
     minimizeFile = function(this, filepath, outPath, boilerplate)
         outPath = outPath or filepath
         local text = LifeBoatAPI.Tools.FileSystemUtils.readAllText(filepath)
-        local minimized, originalLength, newLength = this:minimize(text, boilerplate)
+        local minimized, newsize = this:minimize(text, boilerplate)
         LifeBoatAPI.Tools.FileSystemUtils.writeAllText(outPath, minimized)
 
-        return minimized, originalLength, newLength
+        return minimized, newsize
     end;
 
     ---@param text string text to be minimized
@@ -73,7 +73,7 @@ LifeBoatAPI.Tools.Minimizer = {
     ---@return string minimized
     minimize = function(this, text, boilerplate)
         boilerplate = boilerplate or ""
-        local originalLength = #text
+
         -- insert space at the start prevents issues where the very first character in the file, is part of a variable name
         text = " " .. text .. "\n\n"
 
@@ -126,47 +126,60 @@ LifeBoatAPI.Tools.Minimizer = {
         -- repopulate the original string data now it's safe
         text = parser:repopulateStrings(text, this.params.shortenStringDuplicates)
 
+        local sizeWithoutBoilerplate = #text
+
+        local nameousBoilerplateSize = 233 + #tostring(sizeWithoutBoilerplate) + #tostring(#text)
+        local predictedBoilerplateSize = ((this.params.forceNCBoilerplate or (#text + #boilerplate + nameousBoilerplateSize < 4000)) and nameousBoilerplateSize + #boilerplate) 
+                                       or ((this.params.forceBoilerplate or #text + #boilerplate < 4000) and #boilerplate)
+
         -- add boilerplate if the file is small enough
         -- please do not remove this, the user's boilerplate has precedence over the nameous changey one
         -- but if your resulting file has space - it is polite to include this; a significant effort went into making the minimizer
-        local newLength = #text
         local nameousBoilerplate =
 [[-- Developed & Minimized using LifeBoatAPI - Stormworks Lua plugin for VSCode
 -- https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --      By Nameous Changey]]
-.. "\n-- Originally: " .. tostring(originalLength) .. " chars, Reduced to: " .. tostring(newLength) .. " chars"
+.. "\n-- Minimized Size: " .. tostring(sizeWithoutBoilerplate) .. " (" .. tostring(sizeWithoutBoilerplate + predictedBoilerplateSize) ..  ") chars"
 
+        local addedSpacing = not this.params.removeComments and "\n\n" or ""
         -- add boilerplate if the file is small enough (4000 chars instead of 4096, gives some slight wiggle room)
         if(this.params.forceNCBoilerplate or (#text + #boilerplate + #nameousBoilerplate < 4000)) then
-            text = boilerplate .. "--\n" .. nameousBoilerplate .. "\n" .. text
+            text = boilerplate .. "--\n" .. nameousBoilerplate .. "\n" .. addedSpacing .. text
         elseif(this.params.forceBoilerplate or #text + #boilerplate < 4000) then
-            text = boilerplate .. "\n" .. text
+            text = boilerplate .. "\n" .. addedSpacing .. text
         end
 
-        return text, originalLength, newLength
+        return text, sizeWithoutBoilerplate
     end;
 
     ---@param this Minimizer
     ---@param text string text to minimize
     ---@return string text
     _reduceWhitespace = function(this, text)
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s%s", "\n") -- remove duplicate spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*,%s*", ",")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*=%s*", "=")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*>%s*", ">")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*<%s*", "<")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*+%s*", "+")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*-%s*", "-")  -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%*%s*", "*") -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%/%s*", "/") -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%{%s*", "{") -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%}%s*", "}") -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%(%s*", "(") -- remove unnecessary spacing
-        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%)%s*", ")") -- remove unnecessary spacing
-        --text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%~%s*", "~") -- remove unnecessary spacing
-        --text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%^%s*", "^") -- remove unnecessary spacing
-        --text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*%..%s*", "..") -- remove unnecessary spacing
+         -- remove duplicate spacing
+        text = LifeBoatAPI.Tools.StringUtils.subAll(text, "%s%s", "\n")
+        
+        -- remove whitespace around certain operators
+        local characters = {
+            "=", ",", ">", "<",
+            "+", "-", "*", "/", "%",
+            "{", "}", "(", ")", "[", "]",
+            "^", "|", "~", "#",
+            ".."
+        }
+        for _, character in ipairs(characters) do
+            text = this:_reduceWhitespaceCharacter(text, character)
+        end
+
         return text
-    end
+    end;
+
+    ---@param this Minimizer
+    ---@param text string text to minimize
+    ---@param character string character/operator to remove space around
+    ---@return string text
+    _reduceWhitespaceCharacter = function (this, text, character)
+        return LifeBoatAPI.Tools.StringUtils.subAll(text, "%s*"..LifeBoatAPI.Tools.StringUtils.escape(character) .."%s*", LifeBoatAPI.Tools.StringUtils.escapeSub(character))
+    end;
 }
 LifeBoatAPI.Tools.Class(LifeBoatAPI.Tools.Minimizer)

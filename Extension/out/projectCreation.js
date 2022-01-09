@@ -12,7 +12,7 @@ function beginCreateNewProjectFolder(isMicrocontrollerProject) {
         canSelectFolders: true,
         canSelectMany: false,
         title: "Select or Create empty Project Folder",
-        defaultUri: vscode.workspace.workspaceFolders === undefined ? vscode.Uri.file("C:/") : vscode.Uri.file(path.dirname(vscode.workspace.workspaceFolders[0].uri.fsPath))
+        defaultUri: (vscode.workspace.workspaceFolders === undefined || vscode.workspace.workspaceFolders.length === 0) ? vscode.Uri.file("C:/") : vscode.Uri.file(path.dirname(vscode.workspace.workspaceFolders[0].uri.fsPath))
     };
     return vscode.window.showOpenDialog(fileDialog)
         .then((folders) => {
@@ -41,6 +41,19 @@ function beginCreateNewProjectFolder(isMicrocontrollerProject) {
         }).then((settingsJson) => {
             settingsJson["lifeboatapi.stormworks.isMicrocontrollerProject"] = isMicrocontrollerProject;
             settingsJson["lifeboatapi.stormworks.isAddonProject"] = !isMicrocontrollerProject;
+            // addon project overwrites the default Minifier settings for a better user experience
+            if (!isMicrocontrollerProject) {
+                settingsJson["lifeboatapi.stormworks.minimizer.removeComments"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.reduceAllWhitespace"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.reduceNewlines"] = true;
+                settingsJson["lifeboatapi.stormworks.minimizer.removeRedundancies"] = true;
+                settingsJson["lifeboatapi.stormworks.minimizer.shortenVariables"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.shortenGlobals"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.shortenNumbers"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.shortenStringDuplicates"] = false;
+                settingsJson["lifeboatapi.stormworks.minimizer.forceNCBoilerplate"] = true;
+                settingsJson["lifeboatapi.stormworks.minimizer.forceBoilerplate"] = true;
+            }
             return vscode.workspace.fs.writeFile(params.settingsFilePath, new util_1.TextEncoder().encode(JSON.stringify(settingsJson, null, 4)))
                 .then(() => params);
         });

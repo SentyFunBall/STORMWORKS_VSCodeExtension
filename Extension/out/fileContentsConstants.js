@@ -36,12 +36,12 @@ end
 
 
 function onDraw()
-	-- when you simulate, you should see a slightly pink circle growing over 10 seconds and repeating.
+	-- when you simulate, you should see a slightly green circle growing over 10 seconds and repeating.
     -- Clicking the button, will change between red and green
     if isRedToggle then
-        screen.setColor(255, 125, 125)
+        LifeBoatAPI.LBColorSpace.lbcolorspace_setColorGammaCorrected(255, 125, 125) -- replacement for screen.setColor, that corrects the colours to be less washed out
     else
-        screen.setColor(125, 255, 125)
+        LifeBoatAPI.LBColorSpace.lbcolorspace_setColorGammaCorrected(125, 255, 125)
     end
 	
 	screen.drawCircleF(16, 16, (ticks%600)/60)
@@ -121,6 +121,17 @@ exports.postBuildActionsDefault = `
 -- default is no actions
 print("Build Success - No additional actions in _build/_post_buildactions.lua file")
 print("See the /out/release/ folder for your minimized code")
+
+
+-- Example: Copy the addon script into the game folder every time you hit F7
+--
+--local username = "YourWindowsUsername"
+--local missionName = "YourAddonName"
+--
+--local outDir = LifeBoatAPI.Tools.Filepath:new(arg[3]):add("/release/")
+--local missionsFolder = LifeBoatAPI.Tools.Filepath:new("C:/Users/" .. username.. "/AppData/Roaming/Stormworks/data/missions/")
+--
+--LifeBoatAPI.Tools.FileSystemUtils.copyFile(outDir:add("/script.lua"), missionsFolder:add(missionName .. "/script.lua"))
 `;
 exports.simulateMultipleExample = `
 -- Please note, this is an example setup, but as you do not have the MCs it expects - it will NOT "just run"

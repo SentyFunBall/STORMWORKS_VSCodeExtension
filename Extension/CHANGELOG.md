@@ -1,6 +1,19 @@
 # Change Log
 Issue tracker: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues 
 
+### [0.0.9] - 9th January 2022
+**major**
+- Added colour-correction so the simulator colour-space matches the ingame one.
+- Added LBColorSpace for correcting the in-game colours, back to how they should actually appear.
+- Using non-stormworks compatible lua standard-libraries (e.g. "os" and "package") will now correctly result in errors similar to the game
+
+**minor**
+- Improved Minimizer; some leading spaces were being missed between certain operators
+- Addon projects are now created with most minifications disabled
+- Fixed issue where comment removal was disabled, that may cause issues in the output
+- Minimizer now returns a more meaningful "reduced x characters" size; post redundancy removal
+- Addon LUA intellisense was showing within MC projects
+
 ### [0.0.8] - 2nd January 2022
 **major**
 - **Add require("LifeBoatAPI") library for Microcontrollers:**
